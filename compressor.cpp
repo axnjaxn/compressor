@@ -8,7 +8,15 @@ class BitWriter {
 };
 
 class BitReader {
+private:
+  FILE* fp;
 
+public:
+  BitReader(FILE* fp) {
+    this->fp = fp;
+  }
+
+  
 };
 
 class Compressor {  
