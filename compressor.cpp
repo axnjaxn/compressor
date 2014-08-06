@@ -3,6 +3,10 @@
 
 #include <cstdio>
 
+class BitStream {
+
+};
+
 class Compressor {  
 private:
   static const unsigned short magic = 9001;
@@ -14,6 +18,15 @@ private:
     };
     unsigned int row:32;
   } TableRow;
+
+  class BTree {
+  public:
+    BTree *zero, *one;
+    unsigned int index;
+
+    BTree(unsigned int index) {zero = one = NULL; this->index = index;}
+    ~BTree() {if (zero) delete zero; if (one) delete one;}
+  };
 
 public:
   static void encode(FILE* in, FILE* out);
