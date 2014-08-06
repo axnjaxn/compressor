@@ -3,7 +3,11 @@
 
 #include <cstdio>
 
-class BitStream {
+class BitWriter {
+
+};
+
+class BitReader {
 
 };
 
@@ -13,10 +17,10 @@ private:
   
   typedef union {
     struct {
-      unsigned int index:31;
+      unsigned int index:15;
       unsigned int bit:1;
     };
-    unsigned int row:32;
+    unsigned short row;
   } TableRow;
 
   class BTree {
@@ -24,7 +28,7 @@ private:
     BTree *zero, *one;
     unsigned int index;
 
-    BTree(unsigned int index) {zero = one = NULL; this->index = index;}
+    BTree(unsigned int index = 0) {zero = one = NULL; this->index = index;}
     ~BTree() {if (zero) delete zero; if (one) delete one;}
   };
 
@@ -35,8 +39,41 @@ public:
 
 #endif
 
-#include <cstdio>
+void Compressor::encode(FILE* in, FILE* out) {
+  BitReader reader(in);
+  
+  TableRow entry;
+  BTree* tree = new BTree(), *scan;
+  tree->zero = new BTree(0);
+  tree->one = new BTree(1);
+  unsigned int next = 2;
+  bool bit;
 
-int main(int argc, char** argv) {
-  return 0;
+  fwrite(&Compressor::magic, 2, 1, fp);
+  while (!reader.eof()) {
+    scan = tree;
+    for (;;) {
+      if (reader.eof()) doSomething();
+      
+      bit = reader.next();
+      if (!bit) {
+	if (scan->zero) scan = scan->zero;
+	else {
+	  entry.index = next;
+	  entry.bit = bit;
+	  scan->zero = new BTree(next++);
+	}
+      }
+      else {
+	if (scan->zero) scan = scan->zero;
+	else {
+	  entry.index = next++;
+	  entry.bit = bit;
+	  scan->one = new BTree(next++);
+	}
+      }  
+    }
+    
+    fwrite(&entry.row, 2, 1, fp);
+  }
 }
