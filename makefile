@@ -1,7 +1,7 @@
 APPNAME = compress
 
 LFLAGS = 
-DFLAGS = -g -Wno-unused-result
+DFLAGS = -O2 -Wno-unused-result
 EXT =
 
 OBJECT_FILES = compressor.o main.o
