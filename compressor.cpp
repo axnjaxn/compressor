@@ -12,7 +12,7 @@ void BitWriter::write(bool b) {
   if (b) buf |= (1 << (7 - bitno));
   bitno++;
 
-  if (bitno > 7)
+  if (bitno >= 8)
     flush();
 }  
 
@@ -35,7 +35,7 @@ bool BitReader::eof() const {
 }
 
 bool BitReader::next() {
-  bool b = (buf >> (7 - bitno++));
+  bool b = ((buf >> (7 - bitno++)) & 1);
 
   if (bitno > 7) {
     bitno = 0;
@@ -55,7 +55,6 @@ public:
 };
 
 void writeRow(const Compressor::TableRow& entry, FILE* out) {
-  printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
   fwrite(&entry.row, 2, 1, out);
 }
 
@@ -105,6 +104,8 @@ void Compressor::encode(FILE* in, FILE* out) {
 
     if (!bit) scan->zero = new BTree(next++);
     else scan->one = new BTree(next++);
+
+    scan = tree;
   }
 
   delete tree;
@@ -117,17 +118,17 @@ void readRow(Compressor::TableRow& entry, FILE* in, bool swap_flag) {
   fread(&entry, 2, 1, in);
   if (swap_flag)
     swap(entry.a, entry.b);
-  printf("Read row: ID = %d bit = %d\n", entry.index, entry.bit);
 }
 
 void writePattern(const std::vector<Compressor::TableRow>& rows, unsigned short index, BitWriter& writer) {
   static std::stack<Compressor::TableRow> stk;
-  Compressor::TableRow entry = rows[index];
-
+  Compressor::TableRow entry;
+  
   //Retrieve pattern
-  while (entry.index != 0) {
+  while (index != 0) {
+    entry = rows[index];
     stk.push(entry);
-    entry = rows[entry.index];
+    index = entry.index;
   }
   
   //Write pattern to file
