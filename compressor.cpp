@@ -53,59 +53,51 @@ void Compressor::encode(FILE* in, FILE* out) {
   BitReader reader(in);
   
   TableRow entry;
-  BTree* tree = new BTree(), *scan;
-  tree->zero = new BTree(0);
-  tree->one = new BTree(1);
-  unsigned int next = 2;
+  BTree* tree = new BTree();
+  BTree* scan = tree;
+  unsigned int next = 1;
   bool bit;
 
   unsigned short magic = Compressor::magic;
   fwrite(&magic, 2, 1, out);
-  while (!reader.eof()) {
-    //Initialize pattern search
-    scan = tree;
 
-    for (;;) {
-      //If the pattern has no more bits,
-      if (reader.eof()) {
-	//Write a special row
-	entry.row = ~0;
-	fwrite(&entry.row, 2, 1, out);
-
-	//Then break and write the currently matched pattern
-	entry.index = scan->index;
-	entry.bit = 0;
-	break;
-      }
+  for (;;) {
+    //Finished reading?
+    if (reader.eof()) {
+      //Write a special row
+      entry.row = ~0;
+      printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
+      fwrite(&entry.row, 2, 1, out);
       
-      //If there are more bits
-      bit = reader.next();
-      if (!bit) {
-	//If the pattern's been seen before, continue
-	if (scan->zero) scan = scan->zero;
-	//Otherwise, prepare the next row and record the pattern
-	else {
-	  entry.index = next;
-	  entry.bit = bit;
-	  scan->zero = new BTree(next++);
-	  break;
-	}
-      }
-      else {
-	//If the pattern's been seen before, continue	if (scan->zero) scan = scan->zero;
-	if (scan->one) scan = scan->one;
-	//Otherwise, prepare the next row and record the pattern
-	else {
-	  entry.index = next;
-	  entry.bit = bit;
-	  scan->one = new BTree(next++);
-	  break;
-	}
-      }  
+      //Write final pattern matched
+      entry.index = scan->index;
+      entry.bit = 0;
+      printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
+      fwrite(&entry.row, 2, 1, out);
+
+      //Done compressing
+      break;
     }
-    
-    //Write this row
+
+    //Read one bit from input
+    bit = reader.next();
+
+    //If the pattern's been seen before, continue
+    if (!bit) {
+      if (scan->zero) {scan = scan->zero; continue;}
+    }
+    else {
+      if (scan->one) {scan = scan->one; continue;}
+    }
+
+    //Otherwise, prepare the next row and record the pattern
+    entry.index = next++;
+    entry.bit = bit;
+    printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
     fwrite(&entry.row, 2, 1, out);
+
+    if (!bit) scan->zero = new BTree(entry.index);
+    else scan->one = new BTree(entry.index);
   }
 
   delete tree;
