@@ -1,3 +1,5 @@
 *~
 *.o
 *.dSYM/*
+compress
+test.cmp
