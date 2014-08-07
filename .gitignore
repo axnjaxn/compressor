@@ -3,3 +3,4 @@
 *.dSYM/*
 compress
 test.cmp
+out.txt

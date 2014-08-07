@@ -1,11 +1,14 @@
 #include "compressor.h"
+#include <vector>
+#include <stack>
 
 BitWriter::BitWriter(FILE* fp) {
   this->fp = fp;
+  buf = 0;
   bitno = 0;
 }
 
-void BitWriter::next(bool b) {
+void BitWriter::write(bool b) {
   if (b) buf |= (1 << (7 - bitno));
   bitno++;
 
@@ -14,6 +17,8 @@ void BitWriter::next(bool b) {
 }  
 
 void BitWriter::flush() {
+  if (!bitno) return;
+
   bitno = 0;
   fputc(buf, fp);
   buf = 0;
@@ -49,13 +54,18 @@ public:
   ~BTree() {if (zero) delete zero; if (one) delete one;}
 };
 
+void writeRow(const Compressor::TableRow& entry, FILE* out) {
+  printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
+  fwrite(&entry.row, 2, 1, out);
+}
+
 void Compressor::encode(FILE* in, FILE* out) {
   BitReader reader(in);
   
   TableRow entry;
   BTree* tree = new BTree();
   BTree* scan = tree;
-  unsigned int next = 1;
+  unsigned int next = 1, prev = 0;
   bool bit;
 
   unsigned short magic = Compressor::magic;
@@ -66,14 +76,12 @@ void Compressor::encode(FILE* in, FILE* out) {
     if (reader.eof()) {
       //Write a special row
       entry.row = ~0;
-      printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
-      fwrite(&entry.row, 2, 1, out);
+      writeRow(entry, out);
       
       //Write final pattern matched
       entry.index = scan->index;
       entry.bit = 0;
-      printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
-      fwrite(&entry.row, 2, 1, out);
+      writeRow(entry, out);
 
       //Done compressing
       break;
@@ -91,16 +99,76 @@ void Compressor::encode(FILE* in, FILE* out) {
     }
 
     //Otherwise, prepare the next row and record the pattern
-    entry.index = next++;
+    entry.index = scan->index;
     entry.bit = bit;
-    printf("Write row: ID = %d bit = %d\n", entry.index, entry.bit);
-    fwrite(&entry.row, 2, 1, out);
+    writeRow(entry, out);
 
-    if (!bit) scan->zero = new BTree(entry.index);
-    else scan->one = new BTree(entry.index);
+    if (!bit) scan->zero = new BTree(next++);
+    else scan->one = new BTree(next++);
   }
 
   delete tree;
 }
 
-void Compressor::decode(FILE* in, FILE* out) { }
+template <typename tn>
+inline void swap(tn& a, tn& b) {tn t = a; a = b; b = t;}
+
+void readRow(Compressor::TableRow& entry, FILE* in, bool swap_flag) {
+  fread(&entry, 2, 1, in);
+  if (swap_flag)
+    swap(entry.a, entry.b);
+  printf("Read row: ID = %d bit = %d\n", entry.index, entry.bit);
+}
+
+void writePattern(const std::vector<Compressor::TableRow>& rows, unsigned short index, BitWriter& writer) {
+  static std::stack<Compressor::TableRow> stk;
+  Compressor::TableRow entry = rows[index];
+
+  //Retrieve pattern
+  while (entry.index != 0) {
+    stk.push(entry);
+    entry = rows[entry.index];
+  }
+  
+  //Write pattern to file
+  while (!stk.empty()) {
+    writer.write(stk.top().bit);
+    stk.pop();
+  }
+}
+
+int Compressor::decode(FILE* in, FILE* out) {
+  BitWriter writer(out);
+
+  std::vector<TableRow> rows;
+  rows.push_back(TableRow());
+
+  TableRow entry;
+  bool swap_flag = 0;
+
+  fread(&entry, 2, 1, in);
+  if (entry.row != Compressor::magic) {
+    swap_flag = 1;
+    swap(entry.a, entry.b);
+    if (entry.row != Compressor::magic) return 1;//Invalid!
+  }
+
+  for (;;) {
+    //Read row
+    readRow(entry, in, swap_flag);
+        
+    //Is this the end?
+    if (entry.row == (unsigned short)(~0)) {
+      readRow(entry, in, swap_flag);
+      writePattern(rows, entry.index, writer);
+      writer.flush();      
+      break;
+    }
+
+    //Record pattern and write to output
+    rows.push_back(entry);
+    writePattern(rows, rows.size() - 1, writer);
+  }
+
+  return 0;
+}

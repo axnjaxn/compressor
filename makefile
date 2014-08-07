@@ -26,6 +26,7 @@ $(APP): $(OBJECT_FILES)
 
 run: $(APP) test.txt
 	./$(APP) test.txt test.cmp
+	./$(APP) -x test.cmp out.txt
 
 clean:
 	rm -f *~ *.o $(APP) Thumbs.db *.stackdump test.cmp

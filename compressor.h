@@ -12,7 +12,7 @@ private:
 public:
   BitWriter(FILE* fp);
 
-  void next(bool b);
+  void write(bool b);
   void flush();
 };
 
@@ -30,7 +30,7 @@ public:
 };
 
 class Compressor {  
-private:
+public:
   static const unsigned short magic = 9001;
   
   typedef union {
@@ -38,12 +38,18 @@ private:
       unsigned int index:15;
       unsigned int bit:1;
     };
+    struct {
+      unsigned char a;
+      unsigned char b;
+    };
     unsigned short row;
   } TableRow;
 
-public:
   static void encode(FILE* in, FILE* out);
-  static void decode(FILE* in, FILE* out);
+  static int decode(FILE* in, FILE* out);
+
+private:
+  Compressor() { }
 };
 
 #endif
