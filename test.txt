@@ -1,0 +1,19 @@
+This is a test file. I don't know how well it will compress, but a guy can hope, right?
+
+I'm going to continue typing text and see how well it will all compress.
+
+I met a traveller from an antique land
+who said: two vast and trunkless legs of stone 
+stand in the desert. Near them, on the sand,
+half sunk, a shattered visage lies, whose frown
+and wrinkled lip and sneer of cold command
+tell that its sculptor well those passions read
+which yet survive, stamped on these lifeless things:
+the hand that mocked them and the heart that fed,
+and on the pedestal these words appear:
+My name is Ozymandias, king of kings,
+look on my works, ye mighty, and despair! Nothing beside remains.
+Round the decay of that colossal wreck, boundless and bare,
+The lone and level sands stretch far away.
+
+I can't remember if those are the line breaks. Oh well.
