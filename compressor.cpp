@@ -59,7 +59,6 @@ void Compressor::encode(FILE* in, FILE* out) {
 
       if (scan->child[buf]) scan = scan->child[buf];
       else {
-	printf("Writing entry %d with prev = %d, byte = %02X\n", next, scan->index, buf);
 	writeEntry(scan->index, buf, out);
 	scan->child[buf] = new Trie(next++);
 	break;
