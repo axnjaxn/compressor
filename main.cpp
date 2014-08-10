@@ -8,7 +8,7 @@ void segFault(int param) {
 }
 
 int main(int argc, char* argv[]) {
-  signal(SIGSEGV, segFault);
+  //signal(SIGSEGV, segFault);
 
   if (!strcmp(argv[1], "-x")) {
     if (argc != 4) return 1;
