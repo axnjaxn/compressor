@@ -104,7 +104,7 @@ int Compressor::decode(FILE* in, FILE* out) {
   std::vector<TableEntry> rows;
 
   bool swap_flag = 0;
-
+ 
   TableEntry entry;
   fread(&entry.index, 2, 1, in);
   if (entry.index != Compressor::magic) {

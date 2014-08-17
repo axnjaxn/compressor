@@ -4,7 +4,7 @@ LFLAGS =
 DFLAGS = -g -Wno-unused-result
 EXT =
 
-OBJECT_FILES = compressor.o main.o
+OBJECT_FILES = bitrw.o compressor.o huffman.o main.o
 
 ifdef MINGW
 LFLAGS += -lmingw32 -mwindows -lSDL2main -static-libgcc -static-libstdc++
